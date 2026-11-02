@@ -78,7 +78,7 @@ export default function SourceViewerModal({ citation, onClose }) {
         {/* Footer */}
         <div className="pt-4 border-t border-[#182338] flex items-center justify-between">
           <span className="text-[11px] text-slate-400">
-            Source-grounded via ChromaDB vector index
+            Source-grounded via Pinecone vector index
           </span>
           <button
             onClick={onClose}

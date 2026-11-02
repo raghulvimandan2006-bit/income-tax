@@ -11,7 +11,7 @@ from pydantic import BaseModel, Field
 
 from app.core.config import settings
 from app.security import validate_pdf_upload, sanitize_user_query, mask_api_key
-from app.db.chroma import chroma_manager
+from app.db.pinecone_db import pinecone_manager
 from app.rag.pipeline import rag_pipeline
 from app.Ai.llm import TaxResearchAnswer
 
@@ -53,28 +53,30 @@ class SearchOnlyRequest(BaseModel):
 
 @app.on_event("startup")
 async def startup_event():
-    logger.info("Initializing TaxLens application...")
+    logger.info("Initializing TaxLens application with Pinecone Vector Database...")
     settings.init_directories()
     # Check if knowledge base is empty; if so, automatically seed essential official tax documents
-    docs = chroma_manager.list_documents()
+    docs = pinecone_manager.list_documents()
     if len(docs) == 0:
-        logger.info("No documents found in knowledge base. Seeding official sample Indian tax documents...")
+        logger.info("No documents found in knowledge base. Seeding official sample Indian tax documents into Pinecone...")
         try:
             rag_pipeline.seed_official_tax_data()
-            logger.info("Initial official tax documents successfully seeded into ChromaDB.")
+            logger.info("Initial official tax documents successfully seeded into Pinecone.")
         except Exception as e:
-            logger.error(f"Error during auto-seeding tax documents: {e}")
+            logger.error(f"Error during auto-seeding tax documents into Pinecone: {e}")
 
 # ----------------- Health & Statistics Endpoints -----------------
 
 @app.get("/api/health", tags=["System"])
 def health_check():
-    stats = chroma_manager.get_statistics()
+    stats = pinecone_manager.get_statistics()
     return {
         "status": "healthy",
         "app_name": settings.PROJECT_NAME,
         "version": settings.VERSION,
         "active_model": settings.DEFAULT_LLM_MODEL,
+        "database": "Pinecone Serverless (AWS)",
+        "pinecone_index": settings.PINECONE_INDEX_NAME,
         "gemini_api_configured": bool(settings.GEMINI_API_KEY),
         "gemini_key_masked": mask_api_key(settings.GEMINI_API_KEY),
         "total_documents": stats["total_documents"],
@@ -83,14 +85,14 @@ def health_check():
 
 @app.get("/api/stats", tags=["System"])
 def get_system_stats():
-    return chroma_manager.get_statistics()
+    return pinecone_manager.get_statistics()
 
 # ----------------- Research & Generation Endpoints -----------------
 
 @app.post("/api/research/ask", response_model=TaxResearchAnswer, tags=["Research"])
 def ask_tax_question(request: ResearchRequest):
     """
-    Primary RAG research endpoint. Accepts a tax question, performs semantic search,
+    Primary RAG research endpoint. Accepts a tax question, performs semantic search in Pinecone,
     grounds the answer with Gemini / Fallback Synthesizer, and returns verifiable citations.
     """
     clean_query = sanitize_user_query(request.query)
@@ -112,11 +114,11 @@ def ask_tax_question(request: ResearchRequest):
 @app.post("/api/research/search", tags=["Research"])
 def search_passages_only(request: SearchOnlyRequest):
     """
-    Retrieve matching official passages from ChromaDB without calling the LLM.
+    Retrieve matching official passages from Pinecone without calling the LLM.
     Useful for quick passage verification and inspection.
     """
     clean_query = sanitize_user_query(request.query)
-    results = chroma_manager.query_similar_chunks(
+    results = pinecone_manager.query_similar_chunks(
         query=clean_query,
         top_k=request.top_k or 5,
         threshold=request.threshold
@@ -130,14 +132,14 @@ def search_passages_only(request: SearchOnlyRequest):
 @app.get("/api/research/history", tags=["Research"])
 def get_research_history():
     """Retrieve historical queries and synthesized answers."""
-    return chroma_manager.get_query_history()
+    return pinecone_manager.get_query_history()
 
 # ----------------- Document Management Endpoints -----------------
 
 @app.get("/api/documents", tags=["Documents"])
 def list_documents():
     """List all ingested tax documents with metadata and page counts."""
-    return chroma_manager.list_documents()
+    return pinecone_manager.list_documents()
 
 @app.post("/api/documents/upload", tags=["Documents"])
 async def upload_document(
@@ -147,7 +149,7 @@ async def upload_document(
 ):
     """
     Upload official Indian tax PDF, validate headers & size,
-    extract pages, generate chunks & embeddings, and index into ChromaDB.
+    extract pages, generate chunks & embeddings, and index into Pinecone.
     """
     content = await file.read()
     validate_pdf_upload(file, content)
@@ -169,35 +171,35 @@ async def upload_document(
         )
         return ingestion_result
     except Exception as e:
-        logger.error(f"Failed to ingest PDF '{safe_filename}': {e}", exc_info=True)
+        logger.error(f"Failed to ingest PDF '{safe_filename}' into Pinecone: {e}", exc_info=True)
         # Clean up file on failure
         if file_path.exists():
             file_path.unlink()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to ingest document: {str(e)}"
+            detail=f"Failed to ingest document into Pinecone: {str(e)}"
         )
 
 @app.get("/api/documents/{document_id}", tags=["Documents"])
 def get_document(document_id: str):
     """Get metadata for a specific document."""
-    doc = chroma_manager.get_document(document_id)
+    doc = pinecone_manager.get_document(document_id)
     if not doc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
     return doc
 
 @app.delete("/api/documents/{document_id}", tags=["Documents"])
 def delete_document(document_id: str):
-    """Delete a document and all its indexed chunks from ChromaDB."""
-    deleted = chroma_manager.delete_document(document_id)
+    """Delete a document and all its indexed chunks from Pinecone."""
+    deleted = pinecone_manager.delete_document(document_id)
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
-    return {"success": True, "message": f"Document {document_id} and associated chunks deleted successfully."}
+    return {"success": True, "message": f"Document {document_id} and associated vectors deleted from Pinecone."}
 
 @app.post("/api/documents/{document_id}/process", tags=["Documents"])
 def reprocess_document(document_id: str):
-    """Reprocess an existing document."""
-    doc = chroma_manager.get_document(document_id)
+    """Reprocess an existing document into Pinecone."""
+    doc = pinecone_manager.get_document(document_id)
     if not doc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
     
@@ -206,14 +208,14 @@ def reprocess_document(document_id: str):
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Original physical PDF not found on disk")
     
     # Delete old chunks and re-ingest
-    chroma_manager.delete_document(document_id)
+    pinecone_manager.delete_document(document_id)
     res = rag_pipeline.ingest_pdf(file_path=file_path, title=doc["title"], source_url=doc.get("source_url"))
     return res
 
 @app.get("/api/documents/{document_id}/file", tags=["Documents"])
 def download_document_file(document_id: str):
     """Download/view the original PDF file."""
-    doc = chroma_manager.get_document(document_id)
+    doc = pinecone_manager.get_document(document_id)
     if not doc or "file_path" not in doc:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
     
@@ -229,5 +231,5 @@ def download_document_file(document_id: str):
 
 @app.post("/api/documents/seed-defaults", tags=["Documents"])
 def seed_default_documents():
-    """Seed official sample Indian Tax documents into ChromaDB."""
+    """Seed official sample Indian Tax documents into Pinecone."""
     return rag_pipeline.seed_official_tax_data()

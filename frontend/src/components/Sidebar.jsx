@@ -111,7 +111,7 @@ export default function Sidebar({
               <Database className="w-3 h-3 text-blue-400" />
               {stats?.total_documents ?? 0} docs
             </span>
-            <span>{stats?.total_chunks ?? 0} chunks</span>
+            <span className="text-emerald-400/90">Pinecone Connected</span>
           </div>
         </div>
 

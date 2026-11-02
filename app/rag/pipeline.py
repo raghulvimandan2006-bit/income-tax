@@ -8,12 +8,13 @@ from app.core.config import settings
 from app.rag.dataloader import TaxDataLoader
 from app.rag.chunking import TaxChunker
 from app.rag.embedding import embedding_manager
-from app.db.chroma import chroma_manager
+from app.db.pinecone_db import pinecone_manager
 from app.Ai.llm import llm_service, TaxResearchAnswer
 
 class RAGPipeline:
     """
-    End-to-end RAG orchestrator for document ingestion, semantic search, and tax research generation.
+    End-to-end RAG orchestrator for document ingestion, semantic search, and tax research generation
+    powered by Pinecone vector database.
     """
 
     def __init__(self):
@@ -21,19 +22,19 @@ class RAGPipeline:
 
     def ingest_pdf(self, file_path: Path, title: Optional[str] = None, source_url: Optional[str] = None) -> Dict[str, Any]:
         """
-        Full 10-step ingestion pipeline from PDF to ChromaDB.
+        Full ingestion pipeline from PDF to Pinecone vector store.
         """
         # Step 1-4: Load PDF & extract page-level text
         doc_data = TaxDataLoader.load_pdf(file_path, title=title)
         doc_id = doc_data["document_id"]
 
         # Prevent duplicate document ingestion
-        if chroma_manager.is_document_ingested(doc_id):
-            existing = chroma_manager.get_document(doc_id)
+        if pinecone_manager.is_document_ingested(doc_id):
+            existing = pinecone_manager.get_document(doc_id)
             return {
                 "success": True,
                 "already_exists": True,
-                "message": f"Document '{doc_data['title']}' has already been processed and indexed.",
+                "message": f"Document '{doc_data['title']}' has already been processed and indexed in Pinecone.",
                 "document": existing
             }
 
@@ -51,8 +52,10 @@ class RAGPipeline:
         chunk_texts = [c["text"] for c in chunks]
         embeddings = embedding_manager.embed_texts(chunk_texts)
 
-        # Step 10: Store in ChromaDB
-        chroma_manager.add_chunks(chunks, embeddings)
+        # Step 10: Store in Pinecone
+        pinecone_manager.add_chunks(chunks, embeddings)
+
+        chunk_ids = [c["chunk_id"] for c in chunks]
 
         # Register document metadata in registry
         doc_metadata = {
@@ -63,20 +66,21 @@ class RAGPipeline:
             "file_path": str(file_path),
             "total_pages": doc_data["total_pages"],
             "total_chunks": len(chunks),
+            "chunk_ids": chunk_ids,
             "scanned_pages_count": doc_data["scanned_pages_count"],
             "ocr_required": doc_data["ocr_required"],
             "detected_sections": doc_data["detected_sections"],
             "detected_tax_years": doc_data["detected_tax_years"],
             "ingested_at": time.strftime("%Y-%m-%d %H:%M:%S"),
             "source_url": source_url or doc_data["filename"],
-            "status": "Indexed"
+            "status": "Indexed in Pinecone"
         }
-        chroma_manager.register_document(doc_metadata)
+        pinecone_manager.register_document(doc_metadata)
 
         return {
             "success": True,
             "already_exists": False,
-            "message": f"Successfully ingested {doc_data['total_pages']} pages and {len(chunks)} chunks into ChromaDB.",
+            "message": f"Successfully ingested {doc_data['total_pages']} pages and {len(chunks)} chunks into Pinecone vector database.",
             "document": doc_metadata
         }
 
@@ -89,10 +93,10 @@ class RAGPipeline:
     ) -> TaxResearchAnswer:
         """
         Execute RAG search and answer generation:
-        Query -> ChromaDB Search -> Context Assembly -> Gemini Grounded Generation -> History Logging.
+        Query -> Pinecone Vector Search -> Context Assembly -> Gemini Grounded Generation -> History Logging.
         """
-        # Step 1: Semantic search in ChromaDB
-        relevant_chunks = chroma_manager.query_similar_chunks(
+        # Step 1: Semantic search in Pinecone
+        relevant_chunks = pinecone_manager.query_similar_chunks(
             query=query,
             top_k=top_k or settings.TOP_K,
             threshold=threshold if threshold is not None else settings.SIMILARITY_THRESHOLD,
@@ -116,7 +120,7 @@ class RAGPipeline:
             "model_name": answer_result.model_name,
             "chunks_count": len(relevant_chunks)
         }
-        chroma_manager.record_query_history(history_entry)
+        pinecone_manager.record_query_history(history_entry)
 
         return answer_result
 

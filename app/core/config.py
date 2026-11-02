@@ -27,6 +27,7 @@ class Settings:
         or os.getenv("Pinecone api key")
         or ""
     )
+    PINECONE_INDEX_NAME: str = os.getenv("PINECONE_INDEX_NAME", "tax-knowledge-base")
 
     # Models & Fallback Cascade
     DEFAULT_LLM_MODEL: str = os.getenv("DEFAULT_LLM_MODEL", "gemini-3.5-flash")

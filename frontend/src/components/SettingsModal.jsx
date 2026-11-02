@@ -131,7 +131,7 @@ export default function SettingsModal({
                 <Database className="w-3.5 h-3.5 text-emerald-400" />
                 Vector Database:
               </span>
-              <span className="text-white">ChromaDB (Persistent)</span>
+              <span className="text-white">Pinecone Serverless (AWS)</span>
             </div>
           </div>
         </div>

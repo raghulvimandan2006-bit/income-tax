@@ -53,7 +53,7 @@ export default function HelpModal({ onClose }) {
             <div className="font-mono text-[11px] text-blue-300/90 bg-[#0d1424] p-3 rounded-lg border border-[#182338] space-y-1">
               <div>User Question → Question Embedding (SentenceTransformers)</div>
               <div>&nbsp;&nbsp;↓</div>
-              <div>ChromaDB Vector Retrieval (Cosine Similarity & Threshold Filter)</div>
+              <div>Pinecone Vector Retrieval (Cosine Similarity & Threshold Filter)</div>
               <div>&nbsp;&nbsp;↓</div>
               <div>Context Assembly + Official Metadata Injection</div>
               <div>&nbsp;&nbsp;↓</div>
@@ -83,7 +83,7 @@ export default function HelpModal({ onClose }) {
             <div className="grid grid-cols-2 gap-2 text-[11px] font-mono">
               <div className="p-2 rounded bg-[#0d1424] border border-[#1e293b]">Backend: Python, FastAPI, Pydantic</div>
               <div className="p-2 rounded bg-[#0d1424] border border-[#1e293b]">Doc Processing: PyMuPDF (fitz)</div>
-              <div className="p-2 rounded bg-[#0d1424] border border-[#1e293b]">Vector Store: ChromaDB (Persistent)</div>
+              <div className="p-2 rounded bg-[#0d1424] border border-[#1e293b]">Vector Store: Pinecone Serverless (AWS)</div>
               <div className="p-2 rounded bg-[#0d1424] border border-[#1e293b]">Embeddings: all-MiniLM-L6-v2</div>
               <div className="p-2 rounded bg-[#0d1424] border border-[#1e293b]">AI: Google Gemini 3.5 Flash</div>
               <div className="p-2 rounded bg-[#0d1424] border border-[#1e293b]">Frontend: React, Vite, Tailwind CSS</div>

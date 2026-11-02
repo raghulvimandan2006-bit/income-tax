@@ -63,7 +63,7 @@ export default function DocumentLibrary({ onRefreshStats }) {
   };
 
   const handleDelete = async (docId, title) => {
-    if (!window.confirm(`Are you sure you want to delete '${title}' and remove all its indexed chunks from ChromaDB?`)) return;
+    if (!window.confirm(`Are you sure you want to delete '${title}' and remove all its indexed vectors from Pinecone?`)) return;
     try {
       await deleteDocument(docId);
       showNotice('success', 'Document deleted successfully');
@@ -112,7 +112,7 @@ export default function DocumentLibrary({ onRefreshStats }) {
             Official Tax Document Library
           </h2>
           <p className="text-slate-400 text-xs mt-1">
-            Manage official Income Tax Act PDFs, Finance Acts, and CBDT circulars indexed into ChromaDB.
+            Manage official Income Tax Act PDFs, Finance Acts, and CBDT circulars indexed into cloud Pinecone database.
           </p>
         </div>
 
@@ -164,7 +164,7 @@ export default function DocumentLibrary({ onRefreshStats }) {
           {uploading ? 'Extracting & Indexing PDF...' : 'Drag and drop official tax PDF here'}
         </h4>
         <p className="text-slate-400 text-xs mb-4">
-          PyMuPDF extracts pages & sections, SentenceTransformers generates embeddings, ChromaDB stores chunks.
+          PyMuPDF extracts pages & sections, SentenceTransformers generates embeddings, Pinecone indexes vectors.
         </p>
 
         <label className={`cursor-pointer px-4 py-2 rounded-xl text-xs font-medium text-white transition-all ${

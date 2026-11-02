@@ -13,7 +13,7 @@ User Tax Question
 Query Embedding (Sentence Transformers: all-MiniLM-L6-v2)
        │
        ▼
-ChromaDB Persistent Vector Search (Cosine Similarity & Threshold Filter)
+Pinecone Serverless Vector Search (AWS us-east-1, Cosine Similarity & Threshold Filter)
        │
        ▼
 Retrieved Official Tax Statutory Chunks (Page-Level Citations & Metadata)
@@ -36,7 +36,7 @@ Evidence-Grounded Legal Synthesis + Verifiable Citations [1], [2]
 - **Backend API**: Python, FastAPI, Pydantic v2.
 - **Document Processing**: PyMuPDF (`fitz`) with page-level preservation, scanned page detection, and statutory regex extractors.
 - **Embeddings**: Sentence Transformers (`all-MiniLM-L6-v2`, 384-dimensional dense vectors).
-- **Vector Database**: ChromaDB (Persistent client with collection `tax_knowledge_base`).
+- **Vector Database**: Pinecone Serverless (`tax-knowledge-base` on AWS us-east-1).
 - **AI/LLM Generation**: Google Gemini API (`gemini-3.5-flash`, `gemini-3.8-flash`) with exponential backoff and deterministic offline extractive fallback.
 - **Version Control**: Git.
 

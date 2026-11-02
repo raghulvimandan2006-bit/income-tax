@@ -53,7 +53,7 @@ export default function QueryResult({
           </div>
           <div className="flex items-center gap-3 p-3 rounded-xl bg-[#0d1424] border border-[#1e293b]">
             <div className="w-2 h-2 rounded-full bg-blue-400 animate-pulse" />
-            <span className="text-xs text-slate-300 font-medium">2. Retrieving top relevant passages from ChromaDB</span>
+            <span className="text-xs text-slate-300 font-medium">2. Querying cloud Pinecone vector index (AWS us-east-1)</span>
           </div>
           <div className="flex items-center gap-3 p-3 rounded-xl bg-[#0d1424] border border-[#1e293b]">
             <div className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
