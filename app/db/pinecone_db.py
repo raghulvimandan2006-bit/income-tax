@@ -159,12 +159,21 @@ class PineconeDBManager:
                 }
             })
 
-        # Batch upsert in sizes of 100
+        # Batch upsert in sizes of 100 with retry mechanism
         batch_size = 100
-        for i in range(0, len(vectors_to_upsert), batch_size):
+        total_vectors = len(vectors_to_upsert)
+        for i in range(0, total_vectors, batch_size):
             batch = vectors_to_upsert[i:i + batch_size]
-            self.index.upsert(vectors=batch)
-            logger.info(f"Upserted {len(batch)} vectors to Pinecone index '{self.index_name}'.")
+            for attempt in range(3):
+                try:
+                    self.index.upsert(vectors=batch)
+                    logger.info(f"Upserted {len(batch)} vectors to Pinecone index '{self.index_name}' ({min(i + batch_size, total_vectors)}/{total_vectors}).")
+                    break
+                except Exception as e:
+                    if attempt == 2:
+                        raise e
+                    logger.warning(f"Pinecone upsert batch {i//batch_size + 1} attempt {attempt+1} failed: {e}. Retrying...")
+                    time.sleep(1.5)
 
     def query_similar_chunks(
         self,
@@ -212,6 +221,26 @@ class PineconeDBManager:
 
             if len(matched_chunks) >= k:
                 break
+
+        # Fallback: if no chunks met strict threshold, take top matches above 0.05
+        if not matched_chunks and query_response.matches:
+            for match in query_response.matches[:k]:
+                similarity = float(match.score) if match.score is not None else 0.0
+                if similarity >= 0.05:
+                    meta = match.metadata or {}
+                    matched_chunks.append({
+                        "chunk_id": match.id,
+                        "text": meta.get("text", ""),
+                        "document_id": meta.get("document_id"),
+                        "document_title": meta.get("document_title"),
+                        "filename": meta.get("filename"),
+                        "source_url": meta.get("source_url"),
+                        "page_number": int(meta.get("page_number", 1)),
+                        "detected_sections": meta.get("detected_sections"),
+                        "detected_tax_years": meta.get("detected_tax_years"),
+                        "similarity_score": round(similarity, 4),
+                        "distance": round(1.0 - similarity, 4)
+                    })
 
         return matched_chunks
 

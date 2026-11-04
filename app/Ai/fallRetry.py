@@ -54,7 +54,7 @@ class FallbackRetryHandler:
         """
         Deterministic, offline, evidence-grounded fallback answer generator.
         Used if external LLM APIs are temporarily unreachable or quota is exhausted.
-        Constructs a structured legal research memorandum directly from retrieved ChromaDB passages.
+        Constructs a structured legal research memorandum directly from retrieved Pinecone vector passages.
         """
         if not contexts:
             return {

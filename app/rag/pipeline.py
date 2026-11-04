@@ -1,6 +1,6 @@
 import os
 import time
-import fitz
+import pymupdf as fitz
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 

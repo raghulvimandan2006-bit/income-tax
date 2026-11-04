@@ -5,7 +5,8 @@ from app.core.config import settings
 
 class EmbeddingManager:
     """
-    Manages local Sentence Transformers embeddings for ChromaDB ingestion and query retrieval.
+    Manages local Sentence Transformers embeddings for Pinecone vector ingestion and query retrieval.
+    Includes optimized batch processing for large document corpora.
     """
     _instance = None
     _model = None
@@ -20,13 +21,19 @@ class EmbeddingManager:
             # Load SentenceTransformer model (defaults to all-MiniLM-L6-v2)
             self._model = SentenceTransformer(settings.EMBEDDING_MODEL_NAME)
 
-    def embed_texts(self, texts: List[str]) -> List[List[float]]:
+    def embed_texts(self, texts: List[str], batch_size: int = None) -> List[List[float]]:
         """
-        Embed a list of text chunks.
+        Embed a list of text chunks in batches to optimize throughput and memory usage.
         """
         if not texts:
             return []
-        embeddings = self._model.encode(texts, convert_to_numpy=True, show_progress_bar=False)
+        effective_batch_size = batch_size or settings.BATCH_CHUNK_EMBED_SIZE
+        embeddings = self._model.encode(
+            texts, 
+            batch_size=effective_batch_size,
+            convert_to_numpy=True, 
+            show_progress_bar=False
+        )
         return embeddings.tolist()
 
     def embed_query(self, query: str) -> List[float]:

@@ -4,7 +4,7 @@ from pathlib import Path
 from typing import Tuple
 from fastapi import HTTPException, UploadFile, status
 
-MAX_FILE_SIZE = 50 * 1024 * 1024  # 50 MB
+MAX_FILE_SIZE = 100 * 1024 * 1024  # 100 MB
 PDF_MAGIC_BYTES = b"%PDF"
 
 def sanitize_filename(filename: str) -> str:

@@ -3,7 +3,7 @@ import re
 import hashlib
 from typing import Dict, List, Any, Optional
 from pathlib import Path
-import fitz  # PyMuPDF
+import pymupdf as fitz
 
 class DocumentPage:
     def __init__(self, page_number: int, text: str, is_scanned: bool = False, detected_sections: List[str] = None, detected_years: List[str] = None):

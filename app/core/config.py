@@ -43,7 +43,6 @@ class Settings:
     # Storage Paths
     DATA_DIR: Path = BASE_DIR / "data"
     DOCUMENTS_DIR: Path = BASE_DIR / "data" / "documents"
-    CHROMA_PERSIST_DIR: Path = BASE_DIR / "data" / "chroma_db"
 
     # Chunking & Retrieval Parameters
     CHUNK_SIZE: int = int(os.getenv("CHUNK_SIZE", "600"))
@@ -51,15 +50,20 @@ class Settings:
     TOP_K: int = int(os.getenv("TOP_K", "4"))
     SIMILARITY_THRESHOLD: float = float(os.getenv("SIMILARITY_THRESHOLD", "0.25"))
 
+    # Batch Processing Parameters
+    BATCH_CHUNK_EMBED_SIZE: int = int(os.getenv("BATCH_CHUNK_EMBED_SIZE", "32"))
+    BATCH_PINECONE_UPSERT_SIZE: int = int(os.getenv("BATCH_PINECONE_UPSERT_SIZE", "100"))
+    MAX_BATCH_FILES: int = int(os.getenv("MAX_BATCH_FILES", "20"))
+    BATCH_WORKERS: int = int(os.getenv("BATCH_WORKERS", "4"))
+
     # Security & Upload Constraints
-    MAX_FILE_SIZE_MB: int = 50
+    MAX_FILE_SIZE_MB: int = 100
     ALLOWED_EXTENSIONS: List[str] = [".pdf"]
     ALLOWED_MIME_TYPES: List[str] = ["application/pdf"]
 
     def init_directories(self):
         self.DATA_DIR.mkdir(parents=True, exist_ok=True)
         self.DOCUMENTS_DIR.mkdir(parents=True, exist_ok=True)
-        self.CHROMA_PERSIST_DIR.mkdir(parents=True, exist_ok=True)
 
 settings = Settings()
 settings.init_directories()
