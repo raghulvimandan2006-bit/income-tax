@@ -85,7 +85,8 @@ Evidence-Grounded Legal Synthesis + Verifiable Citations [1], [2]
 2. Verify `.env` configuration:
    ```ini
    GEMINI_API_KEY=your_gemini_api_key_here
-   CHROMA_PERSIST_DIR=./data/chroma_db
+   PINECONE_API_KEY=your_pinecone_api_key_here
+   PINECONE_INDEX_NAME=tax-knowledge-base
    UPLOAD_DIR=./data/documents
    CHUNK_SIZE=600
    CHUNK_OVERLAP=100
@@ -117,11 +118,16 @@ Evidence-Grounded Legal Synthesis + Verifiable Citations [1], [2]
 |---|---|---|
 | `POST` | `/api/research/ask` | Primary RAG endpoint: accepts question, retrieves evidence, generates grounded response |
 | `POST` | `/api/research/search` | Semantic search endpoint: retrieves matching statutory chunks without LLM synthesis |
+| `POST` | `/api/research/batch-ask` | Batch research queries: analyzes multiple tax questions concurrently |
 | `GET` | `/api/research/history` | Retrieves chronological inquiry history with attached citations |
 | `GET` | `/api/documents` | Lists all indexed tax documents, page counts, and metadata |
-| `POST` | `/api/documents/upload` | Validates and ingests official tax PDF into ChromaDB |
+| `POST` | `/api/documents/upload` | Validates and ingests official tax PDF into Pinecone |
+| `POST` | `/api/documents/batch-upload` | Batch processor: ingests multiple tax PDFs concurrently with detailed status tracking |
+| `POST` | `/api/documents/batch-process-directory` | Batch processor: scans and ingests all PDFs in a directory |
+| `GET` | `/api/documents/batch-jobs` | Lists active and historical batch ingestion jobs |
+| `GET` | `/api/documents/batch-jobs/{id}` | Status and itemized progress of a specific batch job |
 | `GET` | `/api/documents/{id}/file` | Serves original PDF document |
-| `DELETE` | `/api/documents/{id}` | Deletes document and its vector chunks from ChromaDB |
+| `DELETE` | `/api/documents/{id}` | Deletes document and its vector chunks from Pinecone |
 | `POST` | `/api/documents/seed-defaults` | Pre-populates essential official tax provisions (Sec 80C, Sec 115BAC, etc.) |
 | `GET` | `/api/stats` | Returns database statistics (documents, chunks, queries) |
 | `GET` | `/api/health` | System health check and model connectivity status |
@@ -130,3 +136,4 @@ Evidence-Grounded Legal Synthesis + Verifiable Citations [1], [2]
 
 ## 6. Academic & Legal Disclaimer
 TaxLens is built for academic research and educational reference. While answers are grounded strictly in official documents, users must consult official gazette notifications and qualified Chartered Accountants for statutory tax filings.
+# income-tax
